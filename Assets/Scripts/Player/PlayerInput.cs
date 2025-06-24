@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using Assets.Scripts.Player;
 using Unity.Cinemachine;
 using UnityEditor.Experimental.GraphView;
@@ -24,6 +25,7 @@ public class PlayerInput : MonoBehaviour
     private Vector3 startingFollowOffset;
     private float maxRotationAmount;
     private HashSet<AbstractUnit> aliveUnits = new(100);
+    private HashSet<AbstractUnit> addedUnits = new(24);
     private List<ISelectable> selectUnits = new(12);
 
     private void Awake()
@@ -55,7 +57,6 @@ public class PlayerInput : MonoBehaviour
         HandlePanning();
         HandleZooming();
         HandleRotation();
-        HandleLeftClick();
         HandleRightClick();
         HandleDragSelect();
     }
@@ -66,18 +67,59 @@ public class PlayerInput : MonoBehaviour
 
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
-            selectionBox.gameObject.SetActive(true);
-            startingMousePosition = Mouse.current.position.ReadValue();
+            HandleMouseDown();
         }
         else if(Mouse.current.leftButton.isPressed && !Mouse.current.leftButton.wasPressedThisFrame)
-            ResizeSelectionBox();
+        {
+            HandleMouseDrag();
+        }
         else if (Mouse.current.leftButton.wasReleasedThisFrame)
         {
-            selectionBox.gameObject.SetActive(false);
+            HandleMouseUp();
         }
     }
 
-    private void ResizeSelectionBox()
+    private void HandleMouseDown()
+    {
+        selectionBox.sizeDelta = Vector2.zero;
+        selectionBox.gameObject.SetActive(true);
+        startingMousePosition = Mouse.current.position.ReadValue();
+        addedUnits.Clear();
+    }
+
+    private void HandleMouseDrag()
+    {
+        Bounds selectionBoxBounds = ResizeSelectionBox();
+        foreach (AbstractUnit unit in aliveUnits)
+        {
+            Vector2 unitPosition = camera.WorldToScreenPoint(unit.transform.position);
+            if (selectionBoxBounds.Contains(unitPosition))
+                addedUnits.Add(unit);
+        }
+    }
+
+    private void HandleMouseUp()
+    {
+        if(!Keyboard.current.shiftKey.isPressed)
+        {
+            DeselectAllUnits();
+        }
+        HandleLeftClick();
+        foreach (AbstractUnit unit in addedUnits)
+        {
+            unit.Select();
+        }
+        selectionBox.gameObject.SetActive(false);
+    }
+
+    private void DeselectAllUnits()
+    {
+        ISelectable[] currentlySelectedUnits = selectUnits.ToArray();
+        foreach (ISelectable selectable in currentlySelectedUnits)
+            selectable.Deselect();
+    }
+
+    private Bounds ResizeSelectionBox()
     {
         Vector2 mousePosition = Mouse.current.position.ReadValue();
 
@@ -86,17 +128,53 @@ public class PlayerInput : MonoBehaviour
 
         selectionBox.anchoredPosition = startingMousePosition + new Vector2(width / 2, height / 2);
         selectionBox.sizeDelta = new Vector2(Mathf.Abs(width), Mathf.Abs(height));
+
+        return new Bounds(selectionBox.anchoredPosition, selectionBox.sizeDelta);
     }
 
     private void HandleRightClick()
     {
-        if (selectUnit == null || selectUnit is not IMoveable moveable) return;
+        if (selectUnits.Count == 0) return;
 
         Ray cameraRay = camera.ScreenPointToRay(Mouse.current.position.ReadValue());
 
         if (Mouse.current.rightButton.wasReleasedThisFrame
             && Physics.Raycast(cameraRay, out RaycastHit hit, float.MaxValue, floorLayers))
-            moveable.MoveTo(hit.point);
+        {
+            List<AbstractUnit> abstractUnits = new (selectUnits.Count);
+            foreach(ISelectable selectable in selectUnits)
+            {
+                if (selectable is AbstractUnit unit)
+                    abstractUnits.Add(unit);
+            }
+            int unitsOnLayer = 0;
+            int maxUnitsOnLayer = 1;
+            float circleRadius = 0;
+            float radialOffset = 0;
+
+            foreach(AbstractUnit unit in abstractUnits)
+            {
+                Vector3 targetPosition = new(hit.point.x + circleRadius * Mathf.Cos(radialOffset * unitsOnLayer), hit.point.y, hit.point.z + circleRadius * Mathf.Sin(radialOffset * unitsOnLayer));
+                unit.MoveTo(targetPosition);
+                unitsOnLayer++;
+                
+                if(unitsOnLayer >= maxUnitsOnLayer)
+                {
+                    unitsOnLayer = 0;
+                    circleRadius += unit.AgentRadius * 3.5f;
+                    maxUnitsOnLayer = Mathf.FloorToInt(2 * Mathf.PI * circleRadius * (unit.AgentRadius * 2));
+                    radialOffset = 2 * Mathf.PI / maxUnitsOnLayer;
+                }
+            }
+
+            //foreach (ISelectable selectable in selectUnits)
+            //{
+            //    if (selectable is IMoveable moveable)
+            //    {
+            //        moveable.MoveTo(hit.point);
+            //    }
+            //}
+        }
     }
 
     private void HandleLeftClick()
@@ -105,14 +183,10 @@ public class PlayerInput : MonoBehaviour
 
         Ray cameraRay = camera.ScreenPointToRay(Mouse.current.position.ReadValue());
 
-        if (Mouse.current.leftButton.wasReleasedThisFrame)
-        {
-            if (selectUnit != null)
-                selectUnit.Deselect();
-
-            if (Physics.Raycast(cameraRay, out RaycastHit hit, float.MaxValue, selectableUnitsLayers)
+        if (Physics.Raycast(cameraRay, out RaycastHit hit, float.MaxValue, selectableUnitsLayers)
             && hit.collider.TryGetComponent(out ISelectable selectable))
-                selectable.Select();
+        {
+            selectable.Select();
         }
     }
 

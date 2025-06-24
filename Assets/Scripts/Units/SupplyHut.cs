@@ -1,23 +1,10 @@
 using UnityEngine;
-using UnityEngine.AI;
 using UnityEngine.Rendering.Universal;
 
-[RequireComponent(typeof(NavMeshAgent))]
-public abstract class AbstractUnit : MonoBehaviour, ISelectable, IMoveable
+public class SupplyHut : MonoBehaviour, ISelectable
 {
     [SerializeField] private DecalProjector decalProjector;
-    public float AgentRadius => agent.radius;
-    private NavMeshAgent agent;
-
-    private void Awake()
-    {
-        agent = GetComponent<NavMeshAgent>();
-    }
-
-    private void Start()
-    {
-        Bus<UnitSpawnEvent>.Raise(new UnitSpawnEvent(this));
-    }
+    [field: SerializeField] public int Health { get; private set; }
 
     public void Deselect()
     {
@@ -25,11 +12,6 @@ public abstract class AbstractUnit : MonoBehaviour, ISelectable, IMoveable
             decalProjector.gameObject.SetActive(false);
 
         Bus<UnitDeselectedEvent>.Raise(new UnitDeselectedEvent(this));
-    }
-
-    public void MoveTo(Vector3 position)
-    {
-        agent.SetDestination(position);
     }
 
     public void Select()
