@@ -71,6 +71,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   <CurrentHealth>k__BackingField: 0
   <MaxHealth>k__BackingField: 0
+  <AvailableCommands>k__BackingField:
+  - {fileID: 11400000, guid: 94034c5285dd3bd45bb32301d1422b1a, type: 2}
   decalProjector: {fileID: 5163588956661083773}
   UnitSO: {fileID: 11400000, guid: a692612301e48f646803fe3ea7d795e0, type: 2}
 --- !u!208 &7568541538079248636

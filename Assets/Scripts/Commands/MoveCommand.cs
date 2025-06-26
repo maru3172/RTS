@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "Move Action", menuName = "AI/Actions/Move", order = 100)]
+[CreateAssetMenu(fileName = "Move Action", menuName = "AI/Commands/Move", order = 100)]
 public class MoveCommand : ActionBase
 {
     [SerializeField] private float radiusMultiplier = 3.5f;
