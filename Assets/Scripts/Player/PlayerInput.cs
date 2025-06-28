@@ -14,6 +14,7 @@ public class PlayerInput : MonoBehaviour
     [SerializeField] private new Camera camera;
     [SerializeField] private CameraConfig cameraConfig;
     [SerializeField] private LayerMask selectableUnitsLayers;
+    [SerializeField] private LayerMask interactableLayers;
     [SerializeField] private LayerMask floorLayers;
     [SerializeField] private RectTransform selectionBox;
 
@@ -152,7 +153,7 @@ public class PlayerInput : MonoBehaviour
         Ray cameraRay = camera.ScreenPointToRay(Mouse.current.position.ReadValue());
 
         if (Mouse.current.rightButton.wasReleasedThisFrame
-            && Physics.Raycast(cameraRay, out RaycastHit hit, float.MaxValue, floorLayers))
+            && Physics.Raycast(cameraRay, out RaycastHit hit, float.MaxValue, interactableLayers | floorLayers))
         {
             List<AbstractUnit> abstractUnits = new (selectUnits.Count);
             foreach(ISelectable selectable in selectUnits)
@@ -191,7 +192,7 @@ public class PlayerInput : MonoBehaviour
         }
         else if(activeAction != null
             && !EventSystem.current.IsPointerOverGameObject()
-            && Physics.Raycast(cameraRay, out hit, float.MaxValue, floorLayers))
+            && Physics.Raycast(cameraRay, out hit, float.MaxValue, interactableLayers | floorLayers))
         {
             ActivateAction(hit);
         }
@@ -204,7 +205,8 @@ public class PlayerInput : MonoBehaviour
         for (int i = 0; i < abstractCommandables.Count; i++)
         {
             CommandContext context = new(abstractCommandables[i], hit, i);
-            activeAction.Handle(context);
+            if(activeAction.CanHandle(context))
+                activeAction.Handle(context);
         }
         activeAction = null;
     }

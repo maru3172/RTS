@@ -11,6 +11,7 @@ public class UIActionButton : MonoBehaviour, IUIElement<ActionBase, UnityAction>
     private void Awake()
     {
         button = GetComponent<Button>();
+        Disable();
     }
 
     public void EnableFor(ActionBase action, UnityAction onClick)
