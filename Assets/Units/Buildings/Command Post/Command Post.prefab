@@ -74,7 +74,9 @@ MonoBehaviour:
   <AvailableCommands>k__BackingField:
   - {fileID: 11400000, guid: 94034c5285dd3bd45bb32301d1422b1a, type: 2}
   decalProjector: {fileID: 5163588956661083773}
-  UnitSO: {fileID: 11400000, guid: a692612301e48f646803fe3ea7d795e0, type: 2}
+  <UnitSO>k__BackingField: {fileID: 11400000, guid: a692612301e48f646803fe3ea7d795e0, type: 2}
+  <CurrentQueueStartTime>k__BackingField: 0
+  <BuildingUnit>k__BackingField: {fileID: 0}
 --- !u!208 &7568541538079248636
 NavMeshObstacle:
   m_ObjectHideFlags: 0
