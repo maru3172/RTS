@@ -5,5 +5,6 @@ public enum UnitCommands
 {
     Stop,
 	Move,
-    Gather
+    Gather,
+    ReturnSupplies
 }

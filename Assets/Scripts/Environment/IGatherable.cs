@@ -6,4 +6,5 @@ public interface IGatherable
 
     public bool BeginGather();
     public int EndGather();
+    public void AbortGather();
 }

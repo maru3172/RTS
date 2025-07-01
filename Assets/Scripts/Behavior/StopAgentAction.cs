@@ -15,6 +15,8 @@ public partial class StopAgentAction : Action
     {
         if(Agent.Value.TryGetComponent(out NavMeshAgent agent))
         {
+            if (agent.TryGetComponent(out Animator animator))
+                animator.SetFloat(AnimationConstants.SPEED, 0);
             agent.ResetPath();
             return Status.Success;
         }

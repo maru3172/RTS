@@ -7329,6 +7329,7 @@ GameObject:
   - component: {fileID: 640315632}
   - component: {fileID: 640315631}
   - component: {fileID: 640315635}
+  - component: {fileID: 640315636}
   m_Layer: 5
   m_Name: Runtime UI UGUI
   m_TagString: Untagged
@@ -7434,6 +7435,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   actionsUI: {fileID: 1741608388}
   buildingBuildingUI: {fileID: 1619984283}
+--- !u!114 &640315636
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 640315630}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e84ee8a77b0ce674795755f47e23c1c3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mineralsText: {fileID: 820690752}
+  gasText: {fileID: 75462576}
+  populationText: {fileID: 893058838}
+  mineralsSO: {fileID: 11400000, guid: 5b24531b897563146ba167435adaeffe, type: 2}
+  gasSO: {fileID: 11400000, guid: f0177425a6f0d3b429dc5f8517b99f79, type: 2}
 --- !u!1001 &646904507
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -29238,7 +29256,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6018277380246554126, guid: 43943267dde60fe4a88cf5bd885c00e3, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 6.399721
+      value: 5.55
       objectReference: {fileID: 0}
     - target: {fileID: 6018277380246554126, guid: 43943267dde60fe4a88cf5bd885c00e3, type: 3}
       propertyPath: m_LocalPosition.y
@@ -29246,7 +29264,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6018277380246554126, guid: 43943267dde60fe4a88cf5bd885c00e3, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -58.22
+      value: -55.63
       objectReference: {fileID: 0}
     - target: {fileID: 6018277380246554126, guid: 43943267dde60fe4a88cf5bd885c00e3, type: 3}
       propertyPath: m_LocalRotation.w

@@ -30,4 +30,9 @@ public class GatherableSupply : MonoBehaviour, IGatherable
         if (Amount <= 0) Destroy(gameObject);
         return amountGahered;
     }
+
+    public void AbortGather()
+    {
+        IsBusy = false;
+    }
 }
