@@ -1,0 +1,200 @@
+owner 챕터
+AbstractCommandable.cs
+   [field: SerializeField] public Owner Owner { get; set; } 추가하여 외부 내부 전부 Owner읽기 쓰기 가능
+
+AbstractUnit.cs 
+            {
+                DamageableSensor.OnUnitEnter += HandleUnitEnter;
+                DamageableSensor.OnUnitExit += HandleUnitExit;
+                DamageableSensor.Owner = Owner;
+                DamageableSensor.SetupFrom(unitSO.AttackConfig);
+            }
+이렇게 해서 시작할때 이벤트와 함께 owner를 가지고 시작
+
+BaseBuilding.cs 
+                GameObject instance = Instantiate(BuildingUnit.Prefab, transform.position, Quaternion.identity);
+                if (instance.TryGetComponent(out AbstractCommandable commandable))
+                {
+                    commandable.Owner = Owner;
+                }
+게임 오브젝트를 받아와서 커맨드를 받아올 수 있는 객체라면 커맨드의 owner를 그 owner로 전환
+-> 즉, 이 행위는 지금 짓고 있는 건물의 owner를 그 플레이어로 변경하겠다는 소리임
+
+DamageableSensor.cs 
+        [field: SerializeField] public Owner Owner { get; set; }
+이렇게 선언 후 (어디서든 불러오고 값 변환)
+ if (collider.TryGetComponent(out IDamageable damageable) && damageable.Owner != Owner)
+조건이 이렇게 나오고 데미지를 감지하는데 이 조건시식에서 데미지를 줄 수 있느냐 + 해당 객체의 owner가 자기꺼가 아닌지 체크
+            if (collider.TryGetComponent(out IDamageable damageable) && damageables.Remove(damageable))
+트리거 종료에서는 그냥 이런식으로도 가능함, 변환해줬는데 이거 지울수도 있냐? 판단
+if (damageables.Contains(evt.Unit))
+유닛이 죽었을 때 해당 이벤트가 불러지면....트리거 발동하게끔 하는 조건문임
+
+IBuildingBuilder.cs
+public Owner Owner { get; }
+인터페이스에 이걸 불렀단 소리는 부른 애들은 전부 사용할 수 있으며 동시에 초기화도 할 수 있다
+
+public enum Owner
+    {
+        Invalid = 0,
+        Player1 = 1,
+        AI1 = 2,
+        AI2 = 4,
+        AI3 = 8,
+        AI4 = 16,
+        AI5 = 32,
+        AI6 = 64,
+        AI7 = 128,
+        Unowned = 256
+    }
+이렇게 해서 자기 Owner를 구분함, 유니티 내부에서 설정
+==================================================================================
+EventBus/Bus.cs 
+  public static Dictionary<Owner, Event> OnEvent = new()
+        {
+            { Owner.Player1, null },
+            { Owner.AI1, null },
+            { Owner.AI2, null },
+            { Owner.AI3, null },
+            { Owner.AI4, null },
+            { Owner.AI5, null },
+            { Owner.AI6, null },
+            { Owner.AI7, null },
+            { Owner.Invalid, null },
+            { Owner.Unowned, null }
+        };
+이벤트가 바뀜, 이제 저 위에랑 연동됨, 자기가 누구의 owner인지를 가지고 시작
+        public static void Raise(Owner owner, T evt) => OnEvent[owner]?.Invoke(evt);
+
+        public static void RegisterForAll(Event handler)
+        {
+            foreach(Owner owner in Enum.GetValues(typeof(Owner)))
+            {
+                OnEvent[owner] += handler;
+            }
+        }
+[owner]라는 소리는 저 중 몇번째껄 가지고 이벤트를 발생시킬거냐라는 뜻임, 그렇게 해서 해당하는 이벤트들을 전부 가동함
+        public static void UnregisterForAll(Event handler)
+        {
+            foreach(Owner owner in Enum.GetValues(typeof(Owner)))
+            {
+                OnEvent[owner] -= handler;
+            }
+        }
+반대도 마찬가지
+
+AbstractCommandable.cs
+Bus<UnitSpawnEvent>.Raise(Owner, new UnitSpawnEvent(this)); 여기서 이렇게 사용함 이런식으로
+Owner랑 어떤 이벤트를 할건지를 적음, 해당 코드는 객체 생성 및 스폰 이벤트임
+
+ Bus<UnitDeathEvent>.Raise(Owner, new UnitDeathEvent(this));
+이건 해당 객체 파괴 이벤트
+
+Bus<UnitUnloadEvent>.Raise(Owner, new UnitUnloadEvent(unit, this));
+Bus<UnitLoadEvent>.Raise(Owner, new UnitLoadEvent(transportable, this));
+이하동일 비슷한 개념임, 추가하고 삭제하는 개념
+
+BaseBuilding.cs
+Bus<UnitDeathEvent>.OnEvent[Owner] -= HandleUnitDeath;
+Bus<BuildingSpawnEvent>.Raise(Owner, new BuildingSpawnEvent(this));
+이제 부르거나 삭제할땐 어느 owner의 이벤트인지 선언해줘야함, 일단 시작전 이전에 등록된게 있을 수도 있으니
+중복 등록을 방지하기 위해 제거, 그 다음 시작 이벤트 알림이니 주의
+Bus<SupplyEvent>.Raise(Owner, new SupplyEvent(-unit.Cost.Minerals, unit.Cost.MineralsSO));
+Bus<SupplyEvent>.Raise(Owner, new SupplyEvent(-unit.Cost.Gas, unit.Cost.GasSO));
+코스트(가스, 미네랄)소모해서 건물을 생성할 때다, 반드시 그만큼이 필요하므로 이렇게 만든것
+Bus<SupplyEvent>.Raise(Owner, new SupplyEvent(unitSO.Cost.Minerals, unitSO.Cost.MineralsSO));
+Bus<SupplyEvent>.Raise(Owner, new SupplyEvent(unitSO.Cost.Gas, unitSO.Cost.GasSO));
+취소되면 그만큼을 반환
+
+Bus<UnitDeathEvent>.OnEvent[Owner] -= HandleUnitDeath;
+Bus<UnitDeathEvent>.OnEvent[Owner] += HandleUnitDeath;
+이거 이해가 안 갈수 있는데 기존에 이벤트가 실행되고 있었다면 지우고 다시 실행하는 느낌임,
+즉 중복 실행 방지 느낌
+
+Bus<UnitDeathEvent>.OnEvent[Owner] -= HandleUnitDeath;
+해당 유닛이 죽거나 파괴되면 이런 이벤트 불러줘야지 ㅇㅇ
+===============================================================
+Bus<UnitSelectedEvent>.OnEvent[Owner.Player1] += HandleUnitSelected;
+Bus<UnitDeselectedEvent>.OnEvent[Owner.Player1] += HandleUnitDeselected;
+Bus<UnitSpawnEvent>.OnEvent[Owner.Player1] += HandleUnitSpawn;
+Bus<CommandSelectedEvent>.OnEvent[Owner.Player1] += HandleActionSelected;
+Bus<UnitDeathEvent>.OnEvent[Owner.Player1] += HandleUnitDeath;
+그래서 owner가 플레이어인 객체는 이런식으로 했지, 원래 단일인데 플레이어만 가져야할 상황에선 이렇게 특정지음
+Bus<UnitSelectedEvent>.OnEvent[Owner.Player1] -= HandleUnitSelected;
+Bus<UnitDeselectedEvent>.OnEvent[Owner.Player1] -= HandleUnitDeselected;
+Bus<UnitSpawnEvent>.OnEvent[Owner.Player1] -= HandleUnitSpawn;
+Bus<CommandSelectedEvent>.OnEvent[Owner.Player1] -= HandleActionSelected;
+Bus<UnitDeathEvent>.OnEvent[Owner.Player1] -= HandleUnitDeath;
+반대도 마찬가지
+================================================================
+BuildBuildingCommand.cs
+private bool HasEnoughSupplies(CommandContext context)
+        {
+            return Building.Cost.Minerals <= Supplies.Minerals[context.Owner] 
+                && Building.Cost.Gas <= Supplies.Gas[context.Owner];
+        }
+조건식 길어지니까 이렇게 만든거, owner도 넘겨서 owner에게 자원을 넘겨주는 행위임
+return HasEnoughSupplies(context) && AllRestrictionsPass(context.Hit.point); 그래서 이렇게 넘김
+Owner = Owner.Player1;
+        }
+
+        public CommandContext(Owner owner, AbstractCommandable commandable, RaycastHit hit, int unitIndex = 0, MouseButton mouseButton = MouseButton.Left)
+        {
+            Commandable = commandable;
+            Hit = hit;
+            UnitIndex = unitIndex;
+            Button = mouseButton;
+            Owner = owner;
+        }
+owner를 player1으로 확정시키고 넘기는 용도
+public SupplyEvent(Owner owner, int amount, SupplySO supply)
+        {
+            Amount = amount;
+            Supply = supply;
+            Owner = owner;
+        }
+마찬가지로 초기화 용도
+       public static Dictionary<Owner, int> Minerals { get; private set; }
+        public static Dictionary<Owner, int> Gas { get; private set; }
+        public static Dictionary<Owner, int> Population { get; private set; }
+        public static Dictionary<Owner, int> PopulationLimit { get; private set; }
+딕셔너리 사용함
+            Minerals = new Dictionary<Owner, int>();
+            Gas = new Dictionary<Owner, int>();
+            Population = new Dictionary<Owner, int>();
+            PopulationLimit = new Dictionary<Owner, int>();
+
+            foreach(Owner owner in Enum.GetValues(typeof(Owner)))
+            {
+                Minerals.Add(owner, 0);
+                Gas.Add(owner, 0);
+                Population.Add(owner, 0);
+                PopulationLimit.Add(owner, 0);
+            }
+
+            Bus<SupplyEvent>.RegisterForAll(HandleSupplyEvent);
+시작할때 딕셔너리에 할당, 초기화 및 등록
+ Bus<SupplyEvent>.UnregisterForAll(HandleSupplyEvent); 제거
+                Minerals[evt.Owner] += evt.Amount;
+                if (Owner.Player1 == evt.Owner)
+                {
+                    mineralsText.SetText(Minerals[evt.Owner].ToString());
+                }
+미네랄 추가
+                Gas[evt.Owner] += evt.Amount;
+                if (Owner.Player1 == evt.Owner)
+                {
+                    gasText.SetText(Gas[evt.Owner].ToString());
+                }
+가스 추가
+ActionsUI.cs
+IEnumerable<BaseCommand> availableCommands = selectedUnits.Count > 0 
+                ? selectedUnits.ElementAt(0).AvailableCommands 
+                : Array.Empty<BaseCommand>();
+기존과 달라진 점은 조건식 질문이 늘어나고 Array가 비어있는지 체크하는 것
+Worker.cs
+Bus<SupplyEvent>.Raise(Owner, new SupplyEvent(Owner, -building.Cost.Minerals, building.Cost.MineralsSO));
+Bus<SupplyEvent>.Raise(Owner, new SupplyEvent(Owner, -building.Cost.Gas, building.Cost.GasSO));
+건물을 지을 때 코스트 소모해서 짓기
+Bus<SupplyEvent>.Raise(Owner, new SupplyEvent(Owner, amount, supply));
+이벤트 달라진 점은 값과 전체적인 공급재 뿐만이 아닌 owner도 같이 넘겨서 한번에 초기화하는 것으로 바뀜

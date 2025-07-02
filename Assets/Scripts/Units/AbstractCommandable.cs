@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Unity.Cinemachine;
+using UnityEngine;
 using UnityEngine.Rendering.Universal;
 public abstract class AbstractCommandable : MonoBehaviour, ISelectable
 {
@@ -6,6 +7,7 @@ public abstract class AbstractCommandable : MonoBehaviour, ISelectable
     [field: SerializeField] public int MaxHealth { get; private set; }
     [field: SerializeField] public ActionBase[] AvailableCommands { get; private set; }
     [SerializeField] private DecalProjector decalProjector;
+    [field: SerializeField] public Owner Owner { get; private set; }
     [field: SerializeField] public  UnitSO UnitSO { get;private set; }
 
     protected virtual void Start()

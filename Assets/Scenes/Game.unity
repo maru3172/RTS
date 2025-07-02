@@ -4830,6 +4830,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2286718458196739073, guid: 883b9682b823cb84cac42e4ad43d41d2, type: 3}
+      propertyPath: <Owner>k__BackingField
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3373975281229243950, guid: 883b9682b823cb84cac42e4ad43d41d2, type: 3}
       propertyPath: m_Height
       value: 0.1
